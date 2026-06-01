@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EHBO Voorraadbeheer – GO! BS De Mozaïek</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue-dark: #0d3b6e;
+    --blue-mid: #1a5fa8;
+    --blue-light: #e8f2fc;
+    --red: #d63031;
+    --red-light: #fdecea;
+    --orange: #e17055;
+    --orange-light: #fff3ee;
+    --green: #00b894;
+    --green-light: #e8faf5;
+    --gray: #6b7280;
+    --gray-light: #f3f4f6;
+    --border: #e5e7eb;
+    --white: #ffffff;
+    --shadow: 0 1px 4px rgba(0,0,0,0.1);
+    --shadow-lg: 0 4px 20px rgba(0,0,0,0.12);
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #f0f4f8;
+    color: #1f2937;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue-mid) 100%);
+    color: white;
+    padding: 0 0 0;
+    box-shadow: 0 2px 12px rgba(13,59,110,0.3);
+  }
+
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px 14px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .logo-wrap {
+    background: white;
+    border-radius: 10px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    flex-shrink: 0;
+  }
+
+  .logo-wrap img {
+    height: 44px;
+    width: auto;
+    display: block;
+  }
+
+  .header-info { flex: 1; }
+
+  .header-info .school-name {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.65);
+    margin-bottom: 2px;
+  }
+
+  .header-info h1 {
+    font-size: 18px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.2;
+  }
+
+  .header-info h1 .ehbo-icon {
+    background: var(--red);
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .export-btn {
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Inter', sans-serif;
+    position: relative;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .export-btn:hover { background: #00a382; }
+
+  .export-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    min-width: 220px;
+    overflow: hidden;
+    z-index: 200;
+    display: none;
+  }
+  .export-menu.open { display: block; }
+
+  .export-menu-header {
+    padding: 8px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .export-menu button {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    text-align: left;
+    border: none;
+    background: white;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    border-bottom: 1px solid #f5f5f5;
+    color: #1f2937;
+  }
+  .export-menu button:last-child { border-bottom: none; }
+  .export-menu button:hover { background: var(--gray-light); }
+  .export-menu button .menu-sub { font-size: 11px; color: var(--gray); display: block; margin-top: 1px; }
+
+  /* LOCATION TABS */
+  .loc-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 20px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .loc-tab {
+    flex: 1;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 10px 10px 0 0;
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.75);
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .loc-tab.active {
+    background: white;
+    color: var(--blue-dark);
+  }
+  .loc-tab .badge {
+    background: var(--red);
+    color: white;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 7px;
+    min-width: 20px;
+    text-align: center;
+  }
+
+  /* MAIN */
+  .main {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 16px 16px 32px;
+  }
+
+  /* STATS */
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    border-top: 3px solid transparent;
+  }
+  .stat-card.red { border-top-color: var(--red); }
+  .stat-card.orange { border-top-color: var(--orange); }
+  .stat-card.green { border-top-color: var(--green); }
+
+  .stat-card .num {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 3px;
+  }
+  .stat-card.red .num { color: var(--red); }
+  .stat-card.orange .num { color: var(--orange); }
+  .stat-card.green .num { color: var(--green); }
+
+  .stat-card .lbl {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray);
+  }
+
+  /* VIEW TABS */
+  .view-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .view-tab {
+    flex: 1;
+    padding: 9px;
+    border: none;
+    border-radius: 8px;
+    background: white;
+    color: var(--gray);
+    font-weight: 500;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    box-shadow: var(--shadow);
+    transition: all 0.15s;
+  }
+  .view-tab.active {
+    background: var(--blue-dark);
+    color: white;
+    font-weight: 700;
+  }
+
+  /* CATEGORY */
+  .category { margin-bottom: 14px; }
+
+  .cat-header {
+    padding: 10px 16px;
+    border-radius: 10px 10px 0 0;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cat-header.blue { background: #1a5fa8; }
+  .cat-header.green { background: #0d6e4a; }
+
+  .cat-body {
+    background: white;
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  /* ITEM ROW */
+  .item-row {
+    border-bottom: 1px solid var(--border);
+  }
+  .item-row:last-child { border-bottom: none; }
+
+  .item-summary {
+    display: flex;
+    align-items: center;
+    padding: 11px 16px;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .item-summary:hover { background: #f9fafb; }
+
+  .item-name-wrap { flex: 1; min-width: 0; }
+  .item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1f2937;
+    line-height: 1.35;
+  }
+  .item-count-preview {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 2px;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .status-badge.ok { background: var(--green-light); color: #0d6e4a; }
+  .status-badge.low { background: var(--orange-light); color: #b84a00; }
+  .status-badge.out { background: var(--red-light); color: var(--red); }
+
+  .chevron { color: #d1d5db; font-size: 11px; flex-shrink: 0; }
+
+  /* ITEM DETAIL */
+  .item-detail {
+    padding: 14px 16px;
+    background: #f8fafc;
+    border-top: 1px solid var(--border);
+    display: none;
+  }
+  .item-detail.open { display: block; }
+
+  .detail-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+
+  /* Aantal counter */
+  .counter-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .counter-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: white;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #374151;
+    font-family: 'Inter', sans-serif;
+    transition: border-color 0.1s;
+  }
+  .counter-btn:hover { border-color: var(--blue-mid); color: var(--blue-mid); }
+
+  .counter-input {
+    width: 64px;
+    text-align: center;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    color: #1f2937;
+    outline: none;
+  }
+  .counter-input:focus { border-color: var(--blue-mid); }
+  .counter-unit { font-size: 12px; color: var(--gray); }
+
+  /* Status buttons */
+  .status-btns {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .status-btn {
+    padding: 5px 13px;
+    border-radius: 999px;
+    border: 2px solid var(--border);
+    background: white;
+    color: var(--gray);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.1s;
+  }
+  .status-btn.selected-ok { border-color: var(--green); background: var(--green-light); color: #0d6e4a; font-weight: 700; }
+  .status-btn.selected-low { border-color: var(--orange); background: var(--orange-light); color: #b84a00; font-weight: 700; }
+  .status-btn.selected-out { border-color: var(--red); background: var(--red-light); color: var(--red); font-weight: 700; }
+
+  .note-input {
+    width: 100%;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 11px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    color: #1f2937;
+    outline: none;
+    background: white;
+  }
+  .note-input:focus { border-color: var(--blue-mid); }
+  .note-input::placeholder { color: #9ca3af; }
+
+  /* Empty state */
+  .empty-state {
+    background: var(--green-light);
+    border-radius: 12px;
+    padding: 32px 24px;
+    text-align: center;
+    color: #0d6e4a;
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  /* Check button */
+  .check-btn {
+    width: 100%;
+    margin-top: 12px;
+    padding: 13px;
+    background: var(--blue-dark);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.02em;
+    transition: background 0.15s;
+  }
+  .check-btn:hover { background: var(--blue-mid); }
+
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: #9ca3af;
+    padding: 16px 0 4px;
+    font-family: monospace;
+  }
+
+  /* Cross */
+  .cross-icon {
+    display: inline-block;
+    position: relative;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  .cross-icon::before, .cross-icon::after {
+    content: '';
+    position: absolute;
+    background: white;
+    border-radius: 2px;
+  }
+  .cross-icon::before { width: 20px; height: 6px; top: 7px; left: 0; }
+  .cross-icon::after { width: 6px; height: 20px; top: 0; left: 7px; }
+
+  @media (max-width: 480px) {
+    .header-top { padding: 12px 14px 10px; gap: 10px; }
+    .header-info h1 { font-size: 15px; }
+    .logo-wrap img { height: 36px; }
+    .main { padding: 12px 10px 24px; }
+    .stats { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="logo-wrap">
+      <img src="https://demozaiekschaarbeek.paddlecms.net/sites/default/files/2022-11/Moza%C3%AFek_Logo-NaamH%5B4624%5D_page-0001%20%281%29.jpg" alt="GO! BS De Mozaïek" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+      <div style="display:none; width:44px; height:44px; background:var(--blue-dark); border-radius:8px; align-items:center; justify-content:center; font-size:20px;">🏫</div>
+    </div>
+    <div class="header-info">
+      <div class="school-name">GO! Basisschool</div>
+      <h1>
+        <span class="ehbo-icon">
+          <span class="cross-icon"></span>
+        </span>
+        EHBO Voorraadbeheer
+      </h1>
+    </div>
+    <div style="position:relative;">
+      <button class="export-btn" onclick="toggleExportMenu(event)">
+        📥 Exporteren ▾
+      </button>
+      <div class="export-menu" id="exportMenu">
+        <div class="export-menu-header">📱 Mobiel</div>
+        <button onclick="shareWhatsApp()">
+          💬 <strong>WhatsApp bestellijst</strong>
+          <span class="menu-sub">Kopiëren &amp; plakken in WhatsApp</span>
+        </button>
+        <div class="export-menu-header" style="border-top:1px solid #eee;">💻 Op pc</div>
+        <button onclick="doExport('bestellen')">
+          🛒 <strong>Excel bestellijst</strong>
+          <span class="menu-sub">Enkel bijna op / niet aanwezig</span>
+        </button>
+        <button onclick="doExport('alles')">
+          📋 <strong>Excel volledig overzicht</strong>
+          <span class="menu-sub">Alle artikelen met aantallen</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="loc-tabs">
+    <button class="loc-tab active" id="tab-kleuterrefter" onclick="switchLoc('kleuterrefter')">
+      🏫 Kleuterrefter
+      <span class="badge" id="badge-kleuterrefter" style="display:none">0</span>
+    </button>
+    <button class="loc-tab" id="tab-secretariaat" onclick="switchLoc('secretariaat')">
+      🗂️ Secretariaat
+      <span class="badge" id="badge-secretariaat" style="display:none">0</span>
+    </button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="stats">
+    <div class="stat-card red">
+      <div class="num" id="stat-out">0</div>
+      <div class="lbl">Niet aanwezig</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="num" id="stat-low">0</div>
+      <div class="lbl">Bijna op</div>
+    </div>
+    <div class="stat-card green">
+      <div class="num" id="stat-ok">0</div>
+      <div class="lbl">Op voorraad</div>
+    </div>
+  </div>
+
+  <div class="view-tabs">
+    <button class="view-tab active" id="vtab-all" onclick="switchView('all')">Alle items (23)</button>
+    <button class="view-tab" id="vtab-problems" onclick="switchView('problems')">⚠️ Te controleren (0)</button>
+  </div>
+
+  <div id="items-container"></div>
+
+  <button class="check-btn" onclick="markChecked()">
+    ✓ Markeer locatie als gecheckt vandaag
+  </button>
+  <div class="footer">Controleer regelmatig de vervaldata van alle materialen!</div>
+</div>
+
+<script>
+const ITEMS = {
+  algemeen: {
+    label: "Algemene artikelen",
+    colorClass: "blue",
+    icon: "🩺",
+    items: [
+      { id:"a1", name:"Doos wegwerphandschoenen (S/M/L)", eenheid:"doos" },
+      { id:"a2", name:"Handdesinfectiegel", eenheid:"fles" },
+      { id:"a3", name:"Koortsthermometer", eenheid:"stuk" },
+      { id:"a4", name:"Driehoeksverband (katoen)", eenheid:"stuk" },
+      { id:"a5", name:"Splinterpincet", eenheid:"stuk" },
+      { id:"a6", name:"Tekenpincet", eenheid:"stuk" },
+      { id:"a7", name:"Verband- of listerschaar", eenheid:"stuk" },
+      { id:"a8", name:"Coldpack (in vriezer bewaren)", eenheid:"stuk" },
+      { id:"a9", name:"Instant cold pack (voor uitstappen)", eenheid:"stuk" },
+      { id:"a10", name:"Isolatiedeken (goud/zilver)", eenheid:"stuk" },
+      { id:"a11", name:"Safe kiss beademingsdoekje/maskertje", eenheid:"stuk" },
+      { id:"a12", name:"Vacuümpompje Aspivenin (wespensteken)", eenheid:"stuk" },
+    ]
+  },
+  wondzorg: {
+    label: "Wondzorg",
+    colorClass: "green",
+    icon: "🩹",
+    items: [
+      { id:"w1", name:"Wegwerpwashandjes en handdoekje", eenheid:"pak" },
+      { id:"w2", name:"Neutrale zeep (vloeibaar)", eenheid:"fles" },
+      { id:"w3", name:"Ontsmettingsspray (Hansamed/Hibidil)", eenheid:"fles" },
+      { id:"w4", name:"Niet-steriele gaascompressen 5x5 cm (pak 50)", eenheid:"pak" },
+      { id:"w5", name:"Steriele gaascompressen 5x5 cm (individueel)", eenheid:"stuk" },
+      { id:"w6", name:"Hypoallergeen kleefpleister (smal + breed)", eenheid:"rol" },
+      { id:"w7", name:"Zelfklevend fixatieverband (Coban)", eenheid:"rol" },
+      { id:"w8", name:"Steunwindel 4 of 5 cm breed", eenheid:"stuk" },
+      { id:"w9", name:"Steriel snelverband (elastisch)", eenheid:"stuk" },
+      { id:"w10", name:"Kinderpleisters – doos 100 stuks", eenheid:"doos" },
+      { id:"w11", name:"Flamigel zalf (insectenbeten, snijwonden, brandwonden)", eenheid:"tube" },
+    ]
+  }
+};
+
+const ALL_ITEMS = [...ITEMS.algemeen.items, ...ITEMS.wondzorg.items];
+const CAT_MAP = {};
+for (const [,cat] of Object.entries(ITEMS)) for (const i of cat.items) CAT_MAP[i.id] = cat.label;
+
+const LOCATIES = ["kleuterrefter","secretariaat"];
+const STORAGE_KEY = "ehbo-mozaiek-v4";
+
+function loadData() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    if (s) return JSON.parse(s);
+  } catch {}
+  const d = {};
+  for (const l of LOCATIES) {
+    d[l] = {};
+    for (const i of ALL_ITEMS) d[l][i.id] = { status:"ok", aantal:"", note:"", checked:null };
+  }
+  return d;
+}
+
+let data = loadData();
+let activeLoc = "kleuterrefter";
+let activeView = "all";
+
+function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {} }
+
+function getState(itemId) {
+  return data[activeLoc][itemId] || { status:"ok", aantal:"", note:"", checked:null };
+}
+function setState(itemId, newState) {
+  data[activeLoc][itemId] = newState;
+  save();
+}
+
+function switchLoc(loc) {
+  activeLoc = loc;
+  for (const l of LOCATIES) {
+    document.getElementById("tab-"+l).classList.toggle("active", l === loc);
+  }
+  render();
+}
+
+function switchView(v) {
+  activeView = v;
+  document.getElementById("vtab-all").classList.toggle("active", v === "all");
+  document.getElementById("vtab-problems").classList.toggle("active", v === "problems");
+  render();
+}
+
+function countProblems(loc) {
+  return ALL_ITEMS.filter(i => (data[loc][i.id] || {}).status !== "ok").length;
+}
+
+function updateStats() {
+  const locData = data[activeLoc];
+  const out = ALL_ITEMS.filter(i => locData[i.id]?.status === "out").length;
+  const low = ALL_ITEMS.filter(i => locData[i.id]?.status === "low").length;
+  const ok = ALL_ITEMS.length - out - low;
+  document.getElementById("stat-out").textContent = out;
+  document.getElementById("stat-low").textContent = low;
+  document.getElementById("stat-ok").textContent = ok;
+
+  const problems = ALL_ITEMS.filter(i => locData[i.id]?.status !== "ok");
+  document.getElementById("vtab-all").textContent = "Alle items (" + ALL_ITEMS.length + ")";
+  document.getElementById("vtab-problems").textContent = "⚠️ Te controleren (" + problems.length + ")";
+
+  for (const l of LOCATIES) {
+    const n = countProblems(l);
+    const badge = document.getElementById("badge-"+l);
+    badge.textContent = n;
+    badge.style.display = n > 0 ? "inline" : "none";
+  }
+}
+
+function statusBadgeHTML(status) {
+  const map = {
+    ok: { cls:"ok", dot:"🟢", label:"Op voorraad" },
+    low: { cls:"low", dot:"🟡", label:"Bijna op" },
+    out: { cls:"out", dot:"🔴", label:"Niet aanwezig" },
+  };
+  const s = map[status] || map.ok;
+  return `<span class="status-badge ${s.cls}">${s.dot} ${s.label}</span>`;
+}
+
+function renderItem(item) {
+  const st = getState(item.id);
+  const countPreview = st.aantal !== "" ? `<div class='item-count-preview'>${st.aantal} ${item.eenheid} beschikbaar</div>` : "";
+  return `
+    <div class="item-row" id="row-${item.id}">
+      <div class="item-summary" onclick="toggleDetail('${item.id}')">
+        <div class="item-name-wrap">
+          <div class="item-name">${item.name}</div>
+          ${countPreview}
+        </div>
+        ${statusBadgeHTML(st.status)}
+        <span class="chevron" id="chev-${item.id}">▼</span>
+      </div>
+      <div class="item-detail" id="detail-${item.id}">
+        <div class="detail-label">Aantal beschikbaar (${item.eenheid})</div>
+        <div class="counter-wrap">
+          <button class="counter-btn" onclick="adjustCount('${item.id}', -1)">−</button>
+          <input class="counter-input" type="number" min="0" id="cnt-${item.id}"
+            value="${st.aantal}" placeholder="?"
+            onchange="updateCount('${item.id}')">
+          <button class="counter-btn" onclick="adjustCount('${item.id}', 1)">+</button>
+          <span class="counter-unit">${item.eenheid}</span>
+        </div>
+        <div class="detail-label">Status</div>
+        <div class="status-btns">
+          <button class="status-btn ${st.status==='ok'?'selected-ok':''}" onclick="updateStatus('${item.id}','ok')">🟢 Op voorraad</button>
+          <button class="status-btn ${st.status==='low'?'selected-low':''}" onclick="updateStatus('${item.id}','low')">🟡 Bijna op</button>
+          <button class="status-btn ${st.status==='out'?'selected-out':''}" onclick="updateStatus('${item.id}','out')">🔴 Niet aanwezig</button>
+        </div>
+        <div class="detail-label">Notitie</div>
+        <input class="note-input" type="text" id="note-${item.id}"
+          placeholder="Bv. besteld 12/06, vervaldatum jan 2027..."
+          value="${st.note||''}" oninput="updateNote('${item.id}')">
+        ${st.checked ? `<div style="font-size:11px;color:#9ca3af;margin-top:8px;">Laatste check: ${st.checked}</div>` : ""}
+      </div>
+    </div>`;
+}
+
+function render() {
+  updateStats();
+  const locData = data[activeLoc];
+  const problems = ALL_ITEMS.filter(i => locData[i.id]?.status !== "ok");
+  const container = document.getElementById("items-container");
+
+  if (activeView === "problems") {
+    if (problems.length === 0) {
+      container.innerHTML = `<div class="empty-state">✅ Alles op voorraad voor deze locatie!</div>`;
+    } else {
+      container.innerHTML = `<div class="category"><div class="cat-header blue">⚠️ Artikelen die aandacht vragen</div><div class="cat-body">${problems.map(renderItem).join("")}</div></div>`;
+    }
+  } else {
+    container.innerHTML = Object.entries(ITEMS).map(([,cat]) => `
+      <div class="category">
+        <div class="cat-header ${cat.colorClass}">${cat.icon} ${cat.label}</div>
+        <div class="cat-body">${cat.items.map(renderItem).join("")}</div>
+      </div>`).join("");
+  }
+
+  // Check btn label
+  const locLabel = activeLoc === "kleuterrefter" ? "Kleuterrefter" : "Secretariaat";
+  document.querySelector(".check-btn").textContent = "✓ Markeer " + locLabel + " als gecheckt vandaag";
+}
+
+function toggleDetail(itemId) {
+  const det = document.getElementById("detail-"+itemId);
+  const chev = document.getElementById("chev-"+itemId);
+  const isOpen = det.classList.toggle("open");
+  chev.textContent = isOpen ? "▲" : "▼";
+}
+
+function adjustCount(itemId, delta) {
+  const st = getState(itemId);
+  const cur = st.aantal === "" ? 0 : Number(st.aantal);
+  const newVal = Math.max(0, cur + delta);
+  const newSt = { ...st, aantal: newVal };
+  setState(itemId, newSt);
+  // Update input
+  const inp = document.getElementById("cnt-"+itemId);
+  if (inp) inp.value = newVal;
+  // Update preview
+  const row = document.getElementById("row-"+itemId);
+  if (row) {
+    const preview = row.querySelector(".item-count-preview");
+    const item = ALL_ITEMS.find(i => i.id === itemId);
+    if (preview) preview.textContent = newVal + " " + item.eenheid + " beschikbaar";
+    else if (newVal > 0) {
+      const nameWrap = row.querySelector(".item-name-wrap");
+      if (nameWrap) nameWrap.innerHTML += `<div class='item-count-preview'>${newVal} ${item.eenheid} beschikbaar</div>`;
+    }
+  }
+}
+
+function updateCount(itemId) {
+  const inp = document.getElementById("cnt-"+itemId);
+  const st = getState(itemId);
+  setState(itemId, { ...st, aantal: inp.value === "" ? "" : Number(inp.value) });
+}
+
+function updateStatus(itemId, newStatus) {
+  const st = getState(itemId);
+  setState(itemId, { ...st, status: newStatus });
+  // Update badge in summary
+  const row = document.getElementById("row-"+itemId);
+  if (row) {
+    const badge = row.querySelector(".status-badge");
+    if (badge) badge.outerHTML = statusBadgeHTML(newStatus);
+    // Update status buttons
+    const btns = row.querySelectorAll(".status-btn");
+    btns.forEach(b => b.className = "status-btn");
+    const statusMap = {ok:"selected-ok",low:"selected-low",out:"selected-out"};
+    btns.forEach(b => {
+      if (b.textContent.includes("Op voorraad") && newStatus==="ok") b.classList.add("selected-ok");
+      if (b.textContent.includes("Bijna op") && newStatus==="low") b.classList.add("selected-low");
+      if (b.textContent.includes("Niet aanwezig") && newStatus==="out") b.classList.add("selected-out");
+    });
+  }
+  updateStats();
+}
+
+function updateNote(itemId) {
+  const inp = document.getElementById("note-"+itemId);
+  const st = getState(itemId);
+  setState(itemId, { ...st, note: inp.value });
+}
+
+function markChecked() {
+  const now = new Date().toLocaleDateString("nl-BE");
+  for (const item of ALL_ITEMS) {
+    data[activeLoc][item.id] = { ...data[activeLoc][item.id], checked: now };
+  }
+  save();
+  const locLabel = activeLoc === "kleuterrefter" ? "Kleuterrefter" : "Secretariaat";
+  alert("✅ " + locLabel + " gemarkeerd als gecheckt op " + now);
+}
+
+// WHATSAPP SHARE
+function shareWhatsApp() {
+  document.getElementById("exportMenu").classList.remove("open");
+  const locNames = { kleuterrefter:"Kleuterrefter", secretariaat:"Secretariaat" };
+  const locData = data[activeLoc];
+  const problems = ALL_ITEMS.filter(i => (locData[i.id]||{}).status !== "ok");
+
+  if (problems.length === 0) {
+    showToast("✅ Alles op voorraad — niets te bestellen!");
+    return;
+  }
+
+  const date = new Date().toLocaleDateString("nl-BE");
+  let lines = [];
+  lines.push("🩺 *EHBO Bestellijst – GO! BS De Mozaïek*");
+  lines.push("📍 " + locNames[activeLoc] + " | 📅 " + date);
+  lines.push("");
+
+  const outItems = problems.filter(i => locData[i.id]?.status === "out");
+  const lowItems = problems.filter(i => locData[i.id]?.status === "low");
+
+  if (outItems.length > 0) {
+    lines.push("🔴 *NIET AANWEZIG – dringend bestellen:*");
+    for (const item of outItems) {
+      const s = locData[item.id];
+      let line = "  • " + item.name;
+      if (s.note) line += " (" + s.note + ")";
+      lines.push(line);
+    }
+    lines.push("");
+  }
+  if (lowItems.length > 0) {
+    lines.push("🟡 *BIJNA OP – binnenkort bestellen:*");
+    for (const item of lowItems) {
+      const s = locData[item.id];
+      let line = "  • " + item.name;
+      if (s.aantal !== "") line += " – nog " + s.aantal + " " + item.eenheid;
+      if (s.note) line += " (" + s.note + ")";
+      lines.push(line);
+    }
+  }
+
+  const text = lines.join("\n");
+  if (navigator.share) {
+    navigator.share({ text: text }).catch(() => copyToClipboard(text));
+  } else {
+    copyToClipboard(text);
+  }
+}
+
+function copyToClipboard(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => showToast("✅ Gekopieerd! Plak in WhatsApp.")).catch(() => fallbackCopy(text));
+  } else { fallbackCopy(text); }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement("textarea");
+  ta.value = text; ta.style.cssText = "position:fixed;opacity:0;";
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand("copy"); showToast("✅ Gekopieerd! Plak in WhatsApp."); }
+  catch { showToast("❌ Kon niet kopiëren. Probeer opnieuw."); }
+  document.body.removeChild(ta);
+}
+
+function showToast(msg) {
+  let t = document.getElementById("toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "toast";
+    t.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a2e45;color:white;padding:12px 22px;border-radius:10px;font-size:14px;font-weight:600;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,0.25);font-family:Inter,sans-serif;text-align:center;max-width:88vw;transition:opacity 0.3s;";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.display = "block"; t.style.opacity = "1";
+  setTimeout(() => { t.style.opacity = "0"; setTimeout(() => t.style.display = "none", 300); }, 3000);
+}
+
+// EXPORT
+function toggleExportMenu(e) {
+  e.stopPropagation();
+  document.getElementById("exportMenu").classList.toggle("open");
+}
+document.addEventListener("click", () => document.getElementById("exportMenu").classList.remove("open"));
+
+function doExport(mode) {
+  document.getElementById("exportMenu").classList.remove("open");
+  const wb = XLSX.utils.book_new();
+  const locNames = { kleuterrefter:"Kleuterrefter", secretariaat:"Secretariaat" };
+  for (const loc of LOCATIES) {
+    const locData = data[loc];
+    const rows = [];
+    rows.push(["GO! BS De Mozaiek \u2013 EHBO Voorraad: " + locNames[loc]]);
+    rows.push(["Gegenereerd op: " + new Date().toLocaleDateString("nl-BE")]);
+    rows.push([]);
+    rows.push(["Categorie","Artikel","Eenheid","Aantal","Status","Notitie"]);
+    const statusLabels = { ok:"Op voorraad", low:"Bijna op", out:"Niet aanwezig" };
+    for (const item of ALL_ITEMS) {
+      const s = locData[item.id] || { status:"ok", aantal:"", note:"" };
+      if (mode === "bestellen" && s.status === "ok") continue;
+      rows.push([
+        CAT_MAP[item.id], item.name, item.eenheid,
+        s.aantal !== "" ? Number(s.aantal) : "",
+        statusLabels[s.status] || s.status,
+        s.note || ""
+      ]);
+    }
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [{wch:22},{wch:44},{wch:10},{wch:10},{wch:16},{wch:30}];
+    ws["!merges"] = [
+      {s:{r:0,c:0},e:{r:0,c:5}},
+      {s:{r:1,c:0},e:{r:1,c:5}},
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, locNames[loc]);
+  }
+  const date = new Date().toLocaleDateString("nl-BE").replace(/\//g,"-");
+  const filename = mode === "bestellen"
+    ? "EHBO_Bestellijst_" + date + ".xlsx"
+    : "EHBO_Volledig_" + date + ".xlsx";
+  XLSX.writeFile(wb, filename);
+}
+
+// Init
+render();
+</script>
+</body>
+</html>
